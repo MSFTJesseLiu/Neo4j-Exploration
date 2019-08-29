@@ -179,8 +179,10 @@ def toCosmosDBEdges(g: GraphFrame, labelColumn: String, partitionKey: String = "
 #### Read graph from Cosmos DB in spark - No Gremlin support
 - No Gremlin support for reading CosmosDB document as a graph
 
-### Python
-- Neo4j Python Driver + ``Py2Neo`` Python Client
+### Python, Kafka, GraphQL + React
+- [Neo4j Python Driver + ``Py2Neo`` Python Client](https://neo4j.com/developer/python/)
+- [Neo4j Streams Kafka Integration](https://neo4j.com/labs/kafka/)
+- [GRANDstack and Neo4j GraphQL](https://neo4j.com/labs/grandstack-graphql/)
 
 
 ## Neo4j Cluster Operation in Production
@@ -201,31 +203,6 @@ So if you only have two cores, then it is not fault telerant, cuz once one core 
 
 - Read Replicas are asynchronously replicated from Core Servers via transaction logs. We usually have large nus of Read Repicas and treat them as disposable. Losing a Read Replica does not impact the cluster’s availability or fault tolerance, it jumberst lower the query throughput.
 
-
-### Monitoring (we never care these in CosmosDB)
-#### Query cluster topology
-``CALL dbms.cluster.overview()``
-![](2019-08-28-17-57-34.png)
-#### Endpoints for status check
-![](2019-08-28-17-54-40.png)
-#### Real Time Monitoring
-
-spread workload 可以自己設定
-user management is per machine, but with halin can apply to all machines
-configuration diff across cluster
-show all response
-cost
-maintainability
-Administration: Hanlin
-- Halin won't do real time alert
-
-Grafana
-if you want something like 7 days or a month, you should use an external monitoring solution such as datadog, stackdriver, grafana, or a similar product. Rather than getting metrics into your browser, they should be pushed to a third-party service where the metrics are stored in a specialized timeseries database, and then you can set up alerts and so on.
-
-#### Metrics 
-Enable Metrics, and further publish them to 3rd party monitoring tool like Prometheus.
-
-- 
 #### Logging
 - Query Logging as a file ``query.log`` in VM.
 - Security events logging (login, password change, role management) as a file ``security.log`` in VM.
@@ -239,6 +216,47 @@ Enable Metrics, and further publish them to 3rd party monitoring tool like Prome
 2016-10-27 13:49:37.053+0000 ERROR [AsyncLog @ 2016-10-27 ...]  [johnsmith]: tried to delete user `janedoe`: User 'janedoe' does ...
 2016-10-27 14:00:02.050+0000 INFO  [AsyncLog @ 2016-10-27 ...]  [johnsmith]: created role `operator`
 ```
+
+### Monitoring (we never care these in CosmosDB)
+#### Query Cluster Topology
+``CALL dbms.cluster.overview()``
+![](2019-08-28-17-57-34.png)
+#### Health Check Endpoint
+![](2019-08-28-17-54-40.png)
+#### [Halin - Real Time Monitoring](https://www.youtube.com/watch?v=hKndQ2qF5ts&t=9m)
+- Cluster overview (stress testing, node down)
+- Per Machine Monitoring
+- Diagnostics Advisor
+- Configuration Listing/Diff
+- Roles Management
+- Active Queries
+- Metrics
+- Log file streaming
+- **Halin won't do real time alert**
+
+#### [3rd Party Solution for Metrics and Alert](https://graphaware.com/neo4j/2019/06/11/monitoring-neo4j-prometheus.html)
+```
+# Setting for enabling all supported metrics.
+metrics.enabled=true
+
+# Setting for enabling all Neo4j-specific metrics.
+metrics.neo4j.enabled=true
+
+# Setting for exposing metrics about transactions; number of transactions started, committed, etc.
+metrics.neo4j.tx.enabled=true
+
+# Setting for exposing metrics about the Neo4j page cache; page faults, evictions, flushes and exceptions, etc.
+metrics.neo4j.pagecache.enabled=true
+
+# Setting for exposing metrics about approximately entities are in the database; nodes, relationships, properties, etc.
+metrics.neo4j.counts.enabled=true
+
+# Setting for exposing metrics about the network usage of the HA cluster component.
+metrics.neo4j.network.enabled=true
+```
+- Prometheus: Publish metrics for polling as a set of Prometheus endpoints.
+- So Prometheus endpoints ship those metrics data to 3rd Party service Grafana where the metrics are stored in a specialized timeseries database, and then you can set up alerts and so on.
+
 #### Admin Actions
 - View all running queries
 - Terminate single/multiple queries
@@ -247,10 +265,6 @@ Enable Metrics, and further publish them to 3rd party monitoring tool like Prome
 - View all active locks for a query
 - Configure transaction timeout (Any query that updates the graph will run in a transaction)
 - Configure lock waiting timeout
-
-
-
-
 
 ### Backup
 In VM, do ``
@@ -270,7 +284,7 @@ bin/neo4j-admin backup --from=192.168.1.34 --backup-dir=/mnt/backup --name=graph
 - AWS Neo4j Causal Cluster cost 380/month, I would bet Azure is similar.
 
 ## Role Based Security (Enterprice Edition)
-### Property-level access control 
+### Property-level Access Control 
 > "You can use role-based, database-wide, property blacklists to limit which properties a user can read. (Deprecated)". New methods for this functionality will be provided in an upcoming release
 
 ```
@@ -294,8 +308,9 @@ CALL dbms.security.addRoleToUser('accounting', 'billsmith')
 - Community Support
 - Official Documentation
 - ACID Constrain (write safe)
-- Indexing
-- APOC
+- [Indexing](https://neo4j.com/docs/cypher-manual/current/schema/index/)
+- [Neo4j Graph Algorithms Library](https://neo4j.com/developer/graph-algorithms/)
+- [APOC](https://neo4j.com/developer/neo4j-apoc/)
 > APOC is a standard library for common procedures and functions on Cypher. Before developers needed to write their own procedures and functions for common functionality causing a lot of duplication.
 ```
 CALL apoc.date.format(timestamp(),"ms","dd.MM.yyyy")
