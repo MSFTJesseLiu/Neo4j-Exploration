@@ -227,14 +227,14 @@ So if you only have two cores, then it is not fault telerant, cuz once one core 
 - Cluster overview (stress testing, node down)
 - Per Machine Monitoring
 - Diagnostics Advisor
-- Configuration Listing/Diff
+- Configuration Listing/Searching/Diff
 - Roles Management
 - Active Queries
 - Metrics
 - Log file streaming
 - **Halin won't do real time alert**
 
-#### [3rd Party Solution for Metrics and Alert](https://graphaware.com/neo4j/2019/06/11/monitoring-neo4j-prometheus.html)
+#### [Metrics and Alert: Officially suggest to use 3rd Party Solution](https://graphaware.com/neo4j/2019/06/11/monitoring-neo4j-prometheus.html)
 ```
 # Setting for enabling all supported metrics.
 metrics.enabled=true
@@ -256,6 +256,8 @@ metrics.neo4j.network.enabled=true
 ```
 - Prometheus: Publish metrics for polling as a set of Prometheus endpoints.
 - So Prometheus endpoints ship those metrics data to 3rd Party service Grafana where the metrics are stored in a specialized timeseries database, and then you can set up alerts and so on.
+
+![](2019-08-29-02-42-11.png)
 
 #### Admin Actions
 - View all running queries
