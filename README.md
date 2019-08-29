@@ -1,11 +1,13 @@
+# Neo4j vs CosmosDB
+
 ## Table of Contents
 - [Disk Storage](#Disk-Storage)
 - [Query Language](#Query-Language)
 - [Data Explorer](#Data-Explorer)
 - [SDK / Library Support](#SDK-/-Library-Support)
-- [Security](#Security)
+- [Neo4j Cluster Operation in Production](#Neo4j-Cluster-Operation-in-Production)
+- [Role Based Security (Enterprice Edition)](#Role-Based-Security-(Enterprice-Edition))
 - [Other Advantages](#Other-Advantages)
-- [Operation / Maintainence](#Operation-/-Maintainence)
 - [Consulting Contact](#Consulting-Contact)
 
 
@@ -180,11 +182,97 @@ def toCosmosDBEdges(g: GraphFrame, labelColumn: String, partitionKey: String = "
 ### Python
 - Neo4j Python Driver + ``Py2Neo`` Python Client
 
-## Role Level Security (Enterprice Edition)
+
+## Neo4j Cluster Operation in Production
+We can create Neo4j cluster or single Neo4j VM on Azure, AWS or GCP
+
+![](2019-08-27-17-41-23.png)
+
+### Causal Clustering
+
+- The out of the box solution provides fault tolerance, scalability, consistency (read-your-own-writes), and availability.
+
+![](2019-08-28-15-03-25.png)
+
+- Core servers has master/slave relationship, so if we lost the connection with the master node, they will auto raise a slave node to become the master, and when the previous master come back, it will become a slave.
+
+- Write commitment: once a majority of Core Servers in a cluster (N/2+1) have accepted the transaction, it is safe to acknowledge the commit to the end user application. This means that to tolerate two failed Core Servers we would need to have a cluster of five Cores.
+So if you only have two cores, then it is not fault telerant, cuz once one core failed, we lost the ability to write.
+
+- Read Replicas are asynchronously replicated from Core Servers via transaction logs. We usually have large nus of Read Repicas and treat them as disposable. Losing a Read Replica does not impact the cluster’s availability or fault tolerance, it jumberst lower the query throughput.
+
+
+### Monitoring (we never care these in CosmosDB)
+#### Query cluster topology
+``CALL dbms.cluster.overview()``
+![](2019-08-28-17-57-34.png)
+#### Endpoints for status check
+![](2019-08-28-17-54-40.png)
+#### Real Time Monitoring
+
+spread workload 可以自己設定
+user management is per machine, but with halin can apply to all machines
+configuration diff across cluster
+show all response
+cost
+maintainability
+Administration: Hanlin
+- Halin won't do real time alert
+
+Grafana
+if you want something like 7 days or a month, you should use an external monitoring solution such as datadog, stackdriver, grafana, or a similar product. Rather than getting metrics into your browser, they should be pushed to a third-party service where the metrics are stored in a specialized timeseries database, and then you can set up alerts and so on.
+
+#### Metrics 
+Enable Metrics, and further publish them to 3rd party monitoring tool like Prometheus.
+
+- 
+#### Logging
+- Query Logging as a file ``query.log`` in VM.
+- Security events logging (login, password change, role management) as a file ``security.log`` in VM.
+```
+2016-10-27 13:45:00.796+0000 INFO  [AsyncLog @ 2016-10-27 ...]  [johnsmith]: logged in
+2016-10-27 13:47:53.443+0000 ERROR [AsyncLog @ 2016-10-27 ...]  [johndoe]: failed to log in: invalid principal or credentials
+2016-10-27 13:48:28.566+0000 INFO  [AsyncLog @ 2016-10-27 ...]  [johnsmith]: created user `janedoe`
+2016-10-27 13:48:32.753+0000 ERROR [AsyncLog @ 2016-10-27 ...]  [johnsmith]: tried to create user `janedoe`: The specified user ...
+2016-10-27 13:49:11.880+0000 INFO  [AsyncLog @ 2016-10-27 ...]  [johnsmith]: added role `admin` to user `janedoe`
+2016-10-27 13:49:34.979+0000 INFO  [AsyncLog @ 2016-10-27 ...]  [johnsmith]: deleted user `janedoe`
+2016-10-27 13:49:37.053+0000 ERROR [AsyncLog @ 2016-10-27 ...]  [johnsmith]: tried to delete user `janedoe`: User 'janedoe' does ...
+2016-10-27 14:00:02.050+0000 INFO  [AsyncLog @ 2016-10-27 ...]  [johnsmith]: created role `operator`
+```
+#### Admin Actions
+- View all running queries
+- Terminate single/multiple queries
+- View all network connections 
+- Terminate single/multiple network connections
+- View all active locks for a query
+- Configure transaction timeout (Any query that updates the graph will run in a transaction)
+- Configure lock waiting timeout
+
+
+
+
+
+### Backup
+In VM, do ``
+bin/neo4j-admin backup --from=192.168.1.34 --backup-dir=/mnt/backup --name=graph.db-backup --pagecache=4G --fallback-to-full=true
+``
+- Online and offline backup: online backups run against a live Neo4j instance, while offline backups require that the database is shut down.
+- Online backups can be full or incremental (specifiy directory of previous backup), offline can only do full backup.
+- Recommended to select Read Replicas to act as backup providers, since we have a lot of them and they are cheap. So if large backup cause performance issues on a Read Replica, it will not affect the performance or redundancy of the Core Cluster.
+
+### Price
+- Microsoft already have a Neo4j License. 
+- Below is the cost of my insgle Neo4j VM instance on Azure for a week. 
+![](2019-08-28-14-28-26.png)
+
+- I have created a Neo4j Causal Cluster on Azure (3 core nodes + 3 read replicas), there isn't any pricing info in Market Place or during the setup process, we can take a look of how much it cost after coupe days. 
+
+- AWS Neo4j Causal Cluster cost 380/month, I would bet Azure is similar.
+
+## Role Based Security (Enterprice Edition)
 ### Property-level access control 
 > "You can use role-based, database-wide, property blacklists to limit which properties a user can read. (Deprecated)". New methods for this functionality will be provided in an upcoming release
 
-The user user-1 will be unable to read the property propertyA.
 ```
 dbms.security.property_level.enabled=true
 dbms.security.property_level.blacklist=\
@@ -193,71 +281,47 @@ dbms.security.property_level.blacklist=\
 
 CALL dbms.security.addRoleToUser('roleX', 'user-1')
 ```
+The user-1 will be unable to read the property propertyA.
 
 ### SubGraph Access Control
-> It is possible to restrict a user’s read or write to specified portions of the graph. For example, a user can be allowed to read, but not write, nodes with specific labels and relationships with certain types.
+> It is possible to restrict a user’s read or write to specified portions of the graph. For example, a user can be allowed to read, but not write, certain type of nodes or edges.
 ```
 CALL dbms.security.createRole('accounting')
-
 CALL dbms.security.addRoleToUser('accounting', 'billsmith')
 ```
 
 ## Other Advantages
 - Community Support
 - Official Documentation
-- ACID constrain (write safe)
+- ACID Constrain (write safe)
 - Indexing
 - APOC
+> APOC is a standard library for common procedures and functions on Cypher. Before developers needed to write their own procedures and functions for common functionality causing a lot of duplication.
+```
+CALL apoc.date.format(timestamp(),"ms","dd.MM.yyyy")
+// -> 07.07.2016
+CALL apoc.date.parse("13.01.1975 19:00","s","dd.MM.yyyy HH:mm")
+// -> 158871600
+```
+Dijkstra Graph Search
+```
+CALL apoc.help("dijkstra")
 
+apoc.algo.dijkstra
+ (startNode :: NODE?, endNode :: NODE?,
+   relationshipTypesAndDirections :: STRING?, weightPropertyName :: STRING?)
+:: (path :: PATH?, weight :: FLOAT?)
+```
+Load JSON
+```
+WITH 'https://raw.githubusercontent.com/neo4j-contrib/neo4j-apoc-procedures/{branch}/src/test/resources/person.json' AS url
 
+CALL apoc.load.json(url) YIELD value as person
 
-
-
-
-## Neo4j Cluster Operation and Maintainence 
-- Azure Market Place
-
-![](2019-08-27-17-41-23.png)
-
-casaul cluster
-replicating db across three cluster so scale out for query they all see the same data with ACID gurantee ...
-master handle the write operation
-spread workload 可以自己設定
-user management is per machine, but with halin can apply to all machines
-configuration diff across cluster
-show all response
-cost
-ramp up 
-learning curve
-maintainability
-Administration: Hanlin
-snapshot cache
-
-Neo4j underlying structure storage
-Monitoring, 
-Causal Cluster Architecture and Upgrade a Causal Cluster
-
-Some of the features offered by Azure Cosmos DB are:
-
-Fully managed with 99.99% Availability SLA
-Elastically and highly scalable (both throughput and storage)
-Predictable low latency: <10ms @ P99 reads and <15ms @ P99 fully-indexed writes
-On the other hand, Neo4j provides the following key features:
-intuitive, using a graph model for data representation
-reliable, with full ACID transactions
-durable and fast, using a custom disk-based, native storage engine
-Neo4j
-Managing the cluster on our own
-Halin  
-
-### Backup
-### Real Time Monitoring
-Halin
-Halin won't do real time alert
-
-Grafana
-if you want something like 7 days or a month, you should use an external monitoring solution such as datadog, stackdriver, grafana, or a similar product. Rather than getting metrics into your browser, they should be pushed to a third-party service where the metrics are stored in a specialized timeseries database, and then you can set up alerts and so on.
-### PRICE AND PERFORMANCE
+MERGE (p:Person {name:person.name})
+   ON CREATE SET p.age = person.age, p.children = size(person.children)
+```
+- Docker Version instead of VM
 
 ## Consulting Contact 
 - Shawn.Elliott@microsoft.com (Cloud architect appear in Neo4j-Azure video)
