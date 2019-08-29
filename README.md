@@ -1,6 +1,7 @@
 # Neo4j vs CosmosDB
 
 ## Table of Contents
+- [Locally](#Locally)
 - [Disk Storage](#Disk-Storage)
 - [Query Language](#Query-Language)
 - [Data Explorer](#Data-Explorer)
@@ -10,6 +11,18 @@
 - [Other Advantages](#Other-Advantages)
 - [Consulting Contact](#Consulting-Contact)
 
+## Locally
+![](2019-08-29-13-24-26.png)
+
+- ``bin/neo4j.bat`` - Run a Neo4j server
+- ``log/debug.log`` -  Text log file
+- ``data/`` - All the nodes and edges and properties
+- ``conf/neo4j.conf`` - All the config
+```
+#dbms.read_only=false
+#dbms.connector.https.enabled=true
+#dbms.connector.https.listen_address=:7473
+```
 
 ## Disk Storage
 ### Neo4j connect data as it stores it - All linked lists
@@ -275,6 +288,11 @@ bin/neo4j-admin backup --from=192.168.1.34 --backup-dir=/mnt/backup --name=graph
 - Online and offline backup: online backups run against a live Neo4j instance, while offline backups require that the database is shut down.
 - Online backups can be full or incremental (specifiy directory of previous backup), offline can only do full backup.
 - Recommended to select Read Replicas to act as backup providers, since we have a lot of them and they are cheap. So if large backup cause performance issues on a Read Replica, it will not affect the performance or redundancy of the Core Cluster.
+
+### Sharding
+Sharding in graph database is difficult, cus splitting graph into multiple locations, need to deal with the complication of graph traversal across all the places, which is expensive. We have to think of a way to partition our graph into independent parts ex: by geography some ID, products, use cases, versions, so each part can be stored in an individual cluster.
+![](2019-08-29-13-19-49.png)
+
 
 ### Price
 - Microsoft already have a Neo4j License. 
