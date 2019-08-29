@@ -54,7 +54,7 @@ where EmployeeUnder.Title = "Software Engineer"
 return count(p), order by length(p)
 ```
 
-- Gremlin - you specify how to traverse the graph
+- Gremlin - You specify how to traverse the graph
 ```
 g.V("18df261b")
     .repeat(out("manages"))
@@ -118,7 +118,7 @@ var g = graph.Traversal().WithRemote(new DriverRemoteConnection(new GremlinClien
 
 return g.V().hasLabel("person").has("age", gt(40)).ToList()
 ```
-- Gremlin has fluent API, but cosmosDB does not support it yet, public preview Dec, 2019
+- Gremlin has fluent API, but CosmosDB does not support it yet, public preview Dec, 2019
 
 ```java
 public async Task<PersonVertex> GetPersonByID(string id)
@@ -139,7 +139,7 @@ Neo4jDataFrame.mergeEdgeList(sc, peopleSkillsDF, ("People", Seq("PersonId")),("H
 
 #### Write graph to CosmosDB - No Gremlin support
 - Need to construct the required GraphSON schema on our own (not a big deal)
-- Spark notebook doesn't know anything about gremlin, it just write it as GraphSON schema
+- Spark notebook doesn't know anything about Gremlin, it just write it as GraphSON schema
 ```scala
 def toCosmosDBEdges(g: GraphFrame, labelColumn: String, partitionKey: String = "") : DataFrame = {
   var dfEdges = g.edges
@@ -174,7 +174,7 @@ def toCosmosDBEdges(g: GraphFrame, labelColumn: String, partitionKey: String = "
 ``loadGraph[VD,ED]``
 ``loadGraphFrame[VD,ED]``
 
-- The perform analytical spark operations
+- Then perform analytical spark operations
 
 #### Read graph from Cosmos DB in spark - No Gremlin support
 - No Gremlin support for reading CosmosDB document as a graph
@@ -186,22 +186,22 @@ def toCosmosDBEdges(g: GraphFrame, labelColumn: String, partitionKey: String = "
 
 
 ## Neo4j Cluster Operation in Production
-We can create Neo4j cluster or single Neo4j VM on Azure, AWS or GCP
+We can create Neo4j cluster or single Neo4j instance on Azure, AWS or GCP
 
 ![](2019-08-27-17-41-23.png)
 
 ### Causal Clustering
 
-- The out of the box solution provides fault tolerance, scalability, consistency (read-your-own-writes), and availability.
+- The out of the box clustering solution that provides fault tolerance, scalability, consistency (read-your-own-writes), and availability.
 
 ![](2019-08-28-15-03-25.png)
 
-- Core servers has master/slave relationship, so if we lost the connection with the master node, they will auto raise a slave node to become the master, and when the previous master come back, it will become a slave.
+- Core servers has master-slave relationship, so if we lost the connection with the master node, they will auto raise a slave node to become the master, and when the previous master come back, it will become a slave.
 
-- Write commitment: once a majority of Core Servers in a cluster (N/2+1) have accepted the transaction, it is safe to acknowledge the commit to the end user application. This means that to tolerate two failed Core Servers we would need to have a cluster of five Cores.
+- Write commitment: Once a majority of Core Servers in a cluster (N/2+1) have accepted the transaction, it is safe to acknowledge the commit to the end user application. This means that to tolerate two failed Core Servers we would need to have a cluster of five Cores.
 So if you only have two cores, then it is not fault telerant, cuz once one core failed, we lost the ability to write.
 
-- Read Replicas are asynchronously replicated from Core Servers via transaction logs. We usually have large nus of Read Repicas and treat them as disposable. Losing a Read Replica does not impact the cluster’s availability or fault tolerance, it jumberst lower the query throughput.
+- Read Replicas are asynchronously replicated from Core Servers via transaction logs. We usually have large numbers of Read Repicas and treat them as disposable. Losing a Read Replica does not impact the cluster’s availability or fault tolerance, it just lower the query throughput.
 
 #### Logging
 - Query Logging as a file ``query.log`` in VM.
@@ -217,21 +217,21 @@ So if you only have two cores, then it is not fault telerant, cuz once one core 
 2016-10-27 14:00:02.050+0000 INFO  [AsyncLog @ 2016-10-27 ...]  [johnsmith]: created role `operator`
 ```
 
-### Monitoring (we never care these in CosmosDB)
+### Monitoring
 #### Query Cluster Topology
 ``CALL dbms.cluster.overview()``
 ![](2019-08-28-17-57-34.png)
 #### Health Check Endpoint
 ![](2019-08-28-17-54-40.png)
 #### [Halin - Real Time Monitoring](https://www.youtube.com/watch?v=hKndQ2qF5ts&t=9m)
-- Cluster overview (stress testing, node down)
+- Cluster Overview (stress testing, node down)
 - Per Machine Monitoring
 - Diagnostics Advisor
 - Configuration Listing/Searching/Diff
 - Roles Management
 - Active Queries
 - Metrics
-- Log file streaming
+- Log File Streaming
 - **Halin won't do real time alert**
 
 #### [Metrics and Alert: Officially suggest to use 3rd Party Solution](https://graphaware.com/neo4j/2019/06/11/monitoring-neo4j-prometheus.html)
