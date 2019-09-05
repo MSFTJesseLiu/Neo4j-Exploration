@@ -237,6 +237,7 @@ So if you only have two cores, then it is not fault telerant, cuz once one core 
 #### Health Check Endpoint
 ![](2019-08-28-17-54-40.png)
 #### [Halin - Real Time Monitoring](https://www.youtube.com/watch?v=hKndQ2qF5ts&t=9m)
+![](2019-09-04-17-38-19.png)
 - Cluster Overview (stress testing, node down)
 - Per Machine Monitoring
 - Diagnostics Advisor
@@ -357,6 +358,9 @@ MERGE (p:Person {name:person.name})
    ON CREATE SET p.age = person.age, p.children = size(person.children)
 ```
 - Docker Version instead of VM
+
+## Facebook
+FB or Linkedin does over a billion reads and a couple million writes per second to their graph, so Neo4j with ACID constrain is not idea for them, for our graph, we probably only write to our graph once a week.
 
 ## Consulting Contact 
 - Shawn.Elliott@microsoft.com (Cloud architect appear in Neo4j-Azure video)
